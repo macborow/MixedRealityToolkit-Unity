@@ -14,6 +14,6 @@ jobs:
     - COG-UnityCache-WUS2-01
     - Agent.Name -equals AIPMRHosted
   steps:
-  - template: templates/common.yml
-  - template: templates/package.yml
-  - template: templates/end.yml
+  - powershell:
+     Write-Host "Hello"
+
