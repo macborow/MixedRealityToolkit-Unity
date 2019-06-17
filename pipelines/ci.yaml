@@ -15,6 +15,8 @@ jobs:
     - SDK_18362 -equals TRUE
   steps:
   - template: templates/common.yml
-  - template: templates/package.yml
-  - template: templates/publishpackages.yml
+  - ${{ if eq(variables['packagingEnabled'], 'true') }}:
+    - template: templates/package.yml
+  - ${{ if eq(variables['packagingEnabled'], 'true') }}:
+    - template: templates/publishpackages.yml
   - template: templates/end.yml

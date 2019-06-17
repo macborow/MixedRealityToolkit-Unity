@@ -2,7 +2,8 @@
 
 variables:
   UnityVersion: Unity2018.3.7f1
-  MRTKVersion: 2.0.0
+  MRTKVersion: 2.0.0  # Major.Minor.Patch
+  MRTKReleaseTag: ''  # final version component, e.g. 'RC2.1' or empty string
 
 jobs:
 - job: CIReleaseValidation
@@ -36,7 +37,34 @@ jobs:
   - template: templates/tasks/signing.yml
     parameters:
       ConfigName: "MRTKSignConfig.xml"
-  - template: templates/package.yml
+
+  # Create pre-release package
+  - ${{ if eq(variables['MRTKReleaseTag'], '') }}:
+    - template: templates/package.yml
+      parameters:
+        version: '$(MRTKVersion)-$(Build.BuildNumber).prerelease'
+  - ${{ if ne(variables['MRTKReleaseTag'], '') }}:
+    - template: templates/package.yml
+      parameters:
+        version: '$(MRTKVersion)-$(Build.BuildNumber).prerelease.$(MRTKReleaseTag)'
+
+  # Create release package
+  - ${{ if eq(variables['MRTKReleaseTag'], '') }}:
+    - template: templates/package.yml
+      parameters:
+        version: '$(MRTKVersion)'
+        packDestination: '$(Build.SourcesDirectory)\release-artifacts'
+  - ${{ if ne(variables['MRTKReleaseTag'], '') }}:
+    - template: templates/package.yml
+      parameters:
+        version: '$(MRTKVersion)-$(MRTKReleaseTag)'
+        packDestination: '$(Build.SourcesDirectory)\release-artifacts'        
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Release Packages'
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)\release-artifacts'
+      ArtifactName: 'mrtk-unity-packages'
+
   - template: templates/tasks/signing.yml
     parameters:
       ConfigName: "MRTKNuGetSignConfig.xml"
