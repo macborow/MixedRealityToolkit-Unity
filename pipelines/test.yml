@@ -9,7 +9,8 @@ jobs:
     - SDK_18362 -equals TRUE
   steps:
   - powershell: |
-      git clone -b mrtk $(scriptsRepoURL) $(Build.ArtifactStagingDirectory)\scripts
+      $Authorization = "Basic " + [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes('$(scriptsRepoVSTSuser):$(scriptsRepoPAT)'))
+      git clone -c http.extraheader="AUTHORIZATION: $Authorization" -b mrtk $(scriptsRepoURL) $(Build.ArtifactStagingDirectory)\scripts
     displayName: "Clone release scripts"
   - powershell: |
       Get-ChildItem -Path $(Build.ArtifactStagingDirectory)\scripts
