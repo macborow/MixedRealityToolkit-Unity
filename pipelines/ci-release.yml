@@ -34,38 +34,50 @@ jobs:
       downloadType: 'single'
       artifactName: 'NuGet'
       downloadPath: '$(Build.SourcesDirectory)'
+    
+  # sign all DLLs
   - template: templates/tasks/signing.yml
     parameters:
       ConfigName: "MRTKSignConfig.xml"
 
-  # Create pre-release package
+  # Create pre-release packages
   - ${{ if eq(variables['MRTKReleaseTag'], '') }}:
     - template: templates/package.yml
       parameters:
         version: '$(MRTKVersion)-$(Build.BuildNumber).prerelease'
+        packDestination: '$(Build.SourcesDirectory)\artifacts\prerelease'
   - ${{ if ne(variables['MRTKReleaseTag'], '') }}:
     - template: templates/package.yml
       parameters:
         version: '$(MRTKVersion)-$(Build.BuildNumber).prerelease.$(MRTKReleaseTag)'
+        packDestination: '$(Build.SourcesDirectory)\artifacts\prerelease'
 
-  # Create release package
+  # Create release packages
   - ${{ if eq(variables['MRTKReleaseTag'], '') }}:
     - template: templates/package.yml
       parameters:
         version: '$(MRTKVersion)'
-        packDestination: '$(Build.SourcesDirectory)\release-artifacts'
+        packDestination: '$(Build.SourcesDirectory)\artifacts\release'
   - ${{ if ne(variables['MRTKReleaseTag'], '') }}:
     - template: templates/package.yml
       parameters:
         version: '$(MRTKVersion)-$(MRTKReleaseTag)'
-        packDestination: '$(Build.SourcesDirectory)\release-artifacts'        
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish Release Packages'
-    inputs:
-      PathtoPublish: '$(Build.SourcesDirectory)\release-artifacts'
-      ArtifactName: 'mrtk-unity-packages'
+        packDestination: '$(Build.SourcesDirectory)\artifacts\release'        
 
   - template: templates/tasks/signing.yml
     parameters:
       ConfigName: "MRTKNuGetSignConfig.xml"
-  - template: templates/publishpackages.yml
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish Packages'
+    inputs:
+      PathtoPublish: '$(Build.SourcesDirectory)\artifacts'
+      ArtifactName: 'mrtk-unity-packages'
+
+  - task: 333b11bd-d341-40d9-afcf-b32d5ce6f23b@2  # NuGetCommand
+    displayName: 'NuGet push'
+    inputs:
+      command: push
+      packagesToPush: '$(Build.SourcesDirectory)/artifacts/prerelease/**/*.nupkg;!$(Build.SourcesDirectory)/artifacts/prerelease/**/*.symbols.nupkg'
+      publishVstsFeed: '$(NuGetFeedId)'
+      buildProperties: 'version=$(MRTKVersion)-$(Build.BuildNumber)'
